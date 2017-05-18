@@ -8,7 +8,7 @@
 #寄件人设置
 :local account "zxlinxiao"
 #寄件人密码设置
-:local pass "L1nx1ao"
+:local pass "error"
 #收件人账号设置
 :local recipient "zxlinxiao@163.com"
 #寄件人账号设置
