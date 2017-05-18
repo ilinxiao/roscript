@@ -1,0 +1,73 @@
+#author linxiao
+#发送本月到期用户信息到邮箱
+#script name expires_users
+#2017/4/19
+#感谢脚本生成工具提供的参考
+
+#查找条件
+:local condition "";
+:local date [/system clock get date]
+#:local day [:pick $date 4 6]
+:local month [:pick $date 0 3]
+:local year [:pick $date 7 11]
+:local monthnum ([:find jan,feb,mar,apr,may,jun,jul,aug,sep,oct,nov,dec $month]+1);
+:if ($monthnum <=9) do={:set monthnum ("0".$monthnum)}
+#:local newdate ("$year"."$monthnum"."$day")
+:set condition ($year.$monthnum)
+
+
+#发送内容设置
+:local contents ""
+:local ucomment "";
+:local uname "";
+:local uprofile ""
+:local userslist ""
+:local count 0
+:local lc 0;
+:local rc 0;
+:local tdate ""
+:local tyear ""
+:local tmonth ""
+:local tday ""
+:local newd ""
+:local state ""
+:local statetxt ""
+/ppp secret 
+:foreach s in=[find comment ~ $condition] do={
+	:if ($count>0) do={
+		:set userslist ($userslist."\n")
+	}
+	:set uname [get $s name];
+	:set uprofile [get $s profile]
+	:set ucomment [get $s comment]
+	:set lc [:find $ucomment "["]
+	:set rc [:find $ucomment "]"]
+	:if ([:typeof $lc]="num" && [:typeof $rc]="num" && $lc<$rc) do={
+		:set tdate [:pick $ucomment ($lc+1) $rc]
+		:set tyear [:pick $tdate 0 4]
+		:set tmonth [:pick $tdate 4 6]
+		:set tday [:pick $tdate 6 8]
+		:set newd ($tyear."/".$tmonth."/".$tday);
+	}
+        :set state [get $s disable]
+        :if (!$state) do={ :set statetxt "ON"} else={ :set statetxt "DISABLED"}
+	:set userslist ("$userslist$uname\t$uprofile\t$newd\t$statetxt")
+	:set count ($count+1)
+}
+
+#主机名称
+:local machine [/system identity get name]
+#内容设置
+:set contents ("$machine@$condition\tExpires Users($count):")
+:set contents ("$contents\n$userslist")
+#发送主题设置
+:local title "$machine/$condition月($count)位到期用户"
+
+#/system script run setemail
+
+#获取邮件服务器信息和发送者信息，发送者和接收者相同
+:local server [/tool e-mail get address]
+:local sender [/tool e-mail get from]
+
+/tool e-mail send server=$server to=$sender from=$sender subject=$title body=$contents
+:log warning "本月到期用户信息已发送到：($sender)"
