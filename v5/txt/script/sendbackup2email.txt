@@ -1,0 +1,51 @@
+#author linxiao
+#发送备份到邮箱
+#script name: sendbackup2email
+#感谢脚本生成工具提供的参考
+
+#备份文件名称设置
+:local filename "";
+:local date [/system clock get date]
+:local day [:pick $date 4 6]
+:local month [:pick $date 0 3]
+:local year [:pick $date 7 11]
+:local monthnum ([:find jan,feb,mar,apr,may,jun,jul,aug,sep,oct,nov,dec $month]+1);
+:if ($monthnum <=9) do={:set monthnum ("0".$monthnum)}
+:local newdate ("$year"."$monthnum")
+#主机名称
+:local machine [/system identity get name]
+:set filename ($machine . "-" . $newdate);
+#备份文件保存到根目录下
+:local prepath "/"
+:local path "$prepath$filename"
+
+/system backup save name=$path;
+
+#删除两个月之前的备份文件
+:local last2monthnum ([:tonum $monthnum]-2)
+:if ($last2monthnum<=0) do={:set last2monthnum (12+$last2monthnum);:set year ($year-1)}
+:if ($last2monthnum<=9) do={:set last2monthnum "0$last2monthnum"}
+:local last2monthdate ($year . $last2monthnum)
+:local last2monthfilename ($machine . "-" . $last2monthdate . ".backup");
+:if ([:len [/file find name=$last2monthfilename]]>0) do={
+	/file remove $last2monthfilename
+}
+
+/system script run setemail
+
+#获取邮件服务器信息和发送者信息，发送者和接收者相同
+:local server [/tool e-mail get address]
+:local sender [/tool e-mail get from]
+#发送内容设置
+:local contents "The public IP is:"
+#发送主题设置
+:local title "$filename@MikroTik系统备份"
+#接口名称设置
+:local ddnsinterface "pppoe-out1"
+
+:global ddnssystems ("RouterOS Version MikroTik v" . [/system package get system version] )
+:local ipssfn [ /ip address get [/ip address find interface=$ddnsinterface ] address ]
+:global ipss [:pick $ipssfn 0 [:find $ipssfn "/" ] ]
+/tool e-mail send server=$server to=$sender from=$sender subject=$title body=("$ddnssystems\n$contents$ipss") file=$filename
+:log warning "$newdate月系统数据已备份，邮件已发送至($sender)"
+:log warning ("外网IP =" ."$ipss")

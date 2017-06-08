@@ -1,0 +1,18 @@
+#author linxiao
+#按日期执行任务
+#sche name: MONTHLY_SCHEDULE_LIST
+
+:local date [/system clock get date]
+:local day [:tonum [:pick $date 4 6]]
+
+:if ($day=1) do={
+#每月1号执行的任务
+#每月1号发送备份到邮箱
+  /system script run sendbackup2email
+#每月1号发送当月到期用户信息到邮箱
+  /system script run expires_users
+}
+:if ($day=15) do={
+#每月15号执行的任务
+#/system script run test15
+}
