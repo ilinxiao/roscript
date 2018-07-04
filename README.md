@@ -1,2 +1,2 @@
 # roscript
-我写的和改写的RouterOS脚本
+RouterOS常用脚本
